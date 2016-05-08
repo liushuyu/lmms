@@ -64,7 +64,9 @@ protected:
 	virtual void moveEvent( QMoveEvent * event );
 	virtual void resizeEvent( QResizeEvent * event );
 	virtual void paintEvent( QPaintEvent * pe );
-	
+
+private slots:
+	void maximize();
 private:
 	const QSize m_buttonSize;
 	const int m_titleBarHeight;

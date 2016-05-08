@@ -58,7 +58,7 @@ SubWindow::SubWindow( QWidget *parent, Qt::WindowFlags windowFlags ) :
 	m_maximizeBtn->resize( m_buttonSize );
 	m_maximizeBtn->setFocusPolicy( Qt::NoFocus );
 	m_maximizeBtn->setToolTip( tr( "Maximize" ) );
-	connect( m_maximizeBtn, SIGNAL( clicked( bool ) ), this, SLOT( showMaximized() ) );
+	connect( m_maximizeBtn, SIGNAL( clicked( bool ) ), this, SLOT( maximize() ) );
 
 	m_minimizeBtn = new QPushButton( embed::getIconPixmap( "minimize" ), QString::null, this );
 	m_minimizeBtn->resize( m_buttonSize );
@@ -105,6 +105,14 @@ void SubWindow::paintEvent( QPaintEvent * )
 	// window icon
 	QPixmap winicon( widget()->windowIcon().pixmap( m_buttonSize ) );
 	p.drawPixmap( 3, 3, m_buttonSize.width(), m_buttonSize.height(), winicon );
+}
+
+void SubWindow::maximize()
+{
+		m_maximizeBtn->hide();
+		m_restoreBtn->move( 38, 3 );
+		m_restoreBtn->show();
+		showMaximized();
 }
 
 
@@ -196,7 +204,8 @@ void SubWindow::resizeEvent( QResizeEvent * event )
 	// button adjustments
 	m_minimizeBtn->hide();
 	m_maximizeBtn->hide();
-	m_restoreBtn->hide();
+	if( !isMaximized() ) { m_restoreBtn->hide(); }
+
 
 	const int rightSpace = 3;
 	const int buttonGap = 1;
