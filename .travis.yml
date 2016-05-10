@@ -1,5 +1,6 @@
 language: cpp
 compiler: gcc
+sudo: required
 matrix:
     include:
         - env: TARGET_OS=win32
