@@ -109,10 +109,10 @@ void SubWindow::paintEvent( QPaintEvent * )
 
 void SubWindow::maximize()
 {
+		showMaximized();
 		m_maximizeBtn->hide();
 		m_restoreBtn->move( 38, 3 );
 		m_restoreBtn->show();
-		showMaximized();
 }
 
 
@@ -204,7 +204,7 @@ void SubWindow::resizeEvent( QResizeEvent * event )
 	// button adjustments
 	m_minimizeBtn->hide();
 	m_maximizeBtn->hide();
-	if( !isMaximized() ) { m_restoreBtn->hide(); }
+	if( !( windowState().testFlag( Qt::WindowMaximized ) ) ) { m_restoreBtn->hide(); qDebug() <<  "triggered!" << windowState();}
 
 
 	const int rightSpace = 3;

@@ -33,7 +33,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QString>
-
+#include <QDebug>
 #include "export.h"
 
 class QMoveEvent;
