@@ -3,24 +3,21 @@ compiler: gcc
 sudo: false
 matrix:
     include:
-        - os: osx 
-        - os: osx
-          env: QT5=True
-    allow_failures:
         - env: TARGET_OS=win32
         - env: TARGET_OS=win64
+        - os: osx 
         - env: QT5=True
         - env: QT5=True TARGET_OS=win32
         - env: QT5=True TARGET_OS=win64
-
+        - os: osx
+          env: QT5=True
 cache:
    - apt
-addons:
+addon:
    apt:
      sources:
         - kalakris-cmake
         - ubuntu-sdk-team
-       # - andrewrk-libgroove
      packages:
         - cmake
         - libsndfile-dev
