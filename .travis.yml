@@ -6,6 +6,9 @@ cache:
     directories:
         - apt_mingw_cache
         - $HOME/.ccache
+env:
+  global:
+   - secure: "lrWBjkRdZk6H+3sJS6waGEp6AYq4cWdf6a7ADcu05hqRNhQdLOpaNY45Zw2UtXiHCBzPpo0GQ92MjmscphwnFk9T431c6bHUGB4Cd4K3I4v3G3WqBHMmP2M5uABMykDB2XA5MyUFRUY+XFqtJyodpYXaN3+uJh58JSqqLTwxuoa+cKi6Mga9iNVNNdVgTl9p8FC8uv6Y4XzNWt+9PxHzpir39Rr1Q/gmRdNZfCINC8taxuROvy6ADE9tV4U8PEC9cUJuLfaXnivGYXVBOMb6Kk3ITfhc5DH5quwQ41D3p1bAnNph4oRcnxe69/T/ER76YMpvLIWG6qTox3eF9gHjPe6rchz4d7dDljQvo/nOgoObwJ0Ra7Li9Kk0LtN7POmdksQCSK4g4BfX15h5vUi7J9XBXeEjnzHv3v0AHkuSTNLR/jYdhMTNQZqjm2iAHbE3xlpp5zsFB4XMRISB+GIArui5DjUPHJn/JfEZH6rH983nf7tXYgk/9toRSaZr7hNiaC15QYj6ikcQNDbEdAMiqocAFY0jp7Yow3ll+lgZV675pVH58ygWzzKDcrpToYxioSfLwdGmXgLmp1Nl5z1+cC/pGPXd/8ldy2+TE1RuVrnHBRPKNrUx06d0xa8dk60Bbfez4n5Pf2d/oc3T0PpylX2JrZRg5rF0PEpLSSKSKks="
 matrix:
     include:
         - env: TYPE=style
@@ -13,7 +16,7 @@ matrix:
         - env: TARGET_OS=win64
         - os: osx
           osx_image: xcode8.2
-        - env: QT5=True
+        - env: QT5=True COV_SCAN=True
         - env: QT5=True TARGET_OS=win32
         - env: QT5=True TARGET_OS=win64
         - os: osx
@@ -22,6 +25,19 @@ matrix:
 install: ${TRAVIS_BUILD_DIR}/.travis/install.sh
 script: ${TRAVIS_BUILD_DIR}/.travis/script.sh
 after_script: ${TRAVIS_BUILD_DIR}/.travis/after_script.sh
+addons:
+  coverity_scan:
+    project:
+      name: "liushuyu/lmms"
+      description: "Build submitted via Travis CI"
+    notification_email: liushuyu_011@163.com
+    build_command_prepend: "echo Coverity Scan Online!"
+    build_command:   "make -j 4"
+    build_script_url: "https://raw.githubusercontent.com/liushuyu/lmms/coverity_scan/.travis/scan_script.sh"
+    branch_pattern: coverity_scan
+script:
+    - if [ "${COV_SCAN}" != "True" ]; then make -j4 -k; fi
+    - if [[ $TARGET_OS != win* ]]; then make tests && ./tests/tests; fi;
 before_deploy: make package
 deploy:
     provider: releases
