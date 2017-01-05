@@ -51,6 +51,8 @@
 		( ( _c0 ) | ( ( _c1 ) << 8 ) | ( ( _c2 ) << 16 ) | ( ( _c3 ) << 24 ) ) )
 
 
+// GM Standard default pitch range.
+const float defaultPitchRange = 2.0f;
 
 extern "C"
 {
@@ -266,7 +268,7 @@ public:
 
 			lastEnd = 0;
 			// General MIDI default
-			it->pitchRangeModel()->setInitValue( 2 );
+            it->pitchRangeModel()->setInitValue( defaultPitchRange );
 		}
 
 		return this;
@@ -390,8 +392,13 @@ bool MidiImport::readSMF( TrackContainer* tc )
 		QString trackName = QString( tr( "Track" ) + " %1" ).arg( t );
 		Alg_track_ptr trk = seq->track( t );
 		pd.setValue( t + preTrackSteps );
-		int rpn_msb = -1;
-		int rpn_lsb = -1;
+
+        // RPN controller detection.
+        static int rpn_msb = -1;
+        static int rpn_lsb = -1;
+
+        // Pitch bend range, for importing.
+        static double pitchMultiply = defaultPitchRange;
 
 		for( int c = 0; c < 129; c++ )
 		{
@@ -496,7 +503,6 @@ bool MidiImport::readSMF( TrackContainer* tc )
 					{
 						double cc = evt->get_real_value();
 						AutomatableModel * objModel = NULL;
-						double pitchMultiply = 0.0f;
 
 						switch( ccid )
 						{
@@ -515,6 +521,7 @@ bool MidiImport::readSMF( TrackContainer* tc )
 								{
 									objModel = ch->it->pitchRangeModel();
 									cc = ceil( cc * 127.0f );
+                                    pitchMultiply = cc;
 									printf( "%f: Pitch range changed to: %f\n", evt->time, cc );
 								}
 
@@ -542,12 +549,11 @@ bool MidiImport::readSMF( TrackContainer* tc )
 
 							case 128:
 								objModel = ch->it->pitchModel();
-								pitchMultiply = ch->it->pitchRangeModel()->value();
 								cc = cc * 100.0f * pitchMultiply;
 								break;
 
 							default:
-								printf( "Unhandled CC: %d: %f\n", ccid, cc );
+                                printf( "%f: Unhandled CC: %d = %f\n", evt->time, ccid, cc );
 								//TODO: something useful for other CCs
 								break;
 						}
