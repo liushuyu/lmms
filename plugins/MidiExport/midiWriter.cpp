@@ -400,7 +400,7 @@ void midiWriter::allocateChannel( InstrumentTrack *track )
 		int8_t prog = dynamic_cast< IntModel * >( tr_inst->childModel( "patch" ) )->value();
 
 		// Step 1: Find unused channel
-		for( currentChannel = 0; currentChannel < 16; currentChannel++ )
+		for( currentChannel = 0; currentChannel < MidiChannelCount; currentChannel++ )
 		{
 			if ( currentChannel == DrumChannel )
 				continue;
@@ -413,7 +413,7 @@ void midiWriter::allocateChannel( InstrumentTrack *track )
 		}
 
 		// Step 2: If no unused channel found, find channel has the same program.
-		for( currentChannel = 0; currentChannel < 16; currentChannel++ )
+		for( currentChannel = 0; currentChannel < MidiChannelCount; currentChannel++ )
 		{
 			if ( currentChannel == DrumChannel )
 				continue;
