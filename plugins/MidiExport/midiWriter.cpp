@@ -424,11 +424,11 @@ void midiWriter::insertPitchEvent( InstrumentTrack *track )
 
 	SEARCH_AUTOTRACKS_START( track->pitchModel() )
 		PROGRESSION_CALC_START;
-			FIND_PITCH_MULTYPLY( (i-1).key() + ii );
+			FIND_PITCH_MULTYPLY( (i-1).key() + ii + offset );
 			INSERT_PITCH_EVENT( (i-1).key() + ii, offset, a_tco->valueAt( MidiTime( (i-1).key()+ii+offset ) ) );
 		PROGRESSION_CALC_END;
 
-		FIND_PITCH_MULTYPLY( i.key() );
+		FIND_PITCH_MULTYPLY( i.key() + offset );
 		INSERT_PITCH_EVENT( i.key(), offset, i.value() );
 	SEARCH_AUTOTRACKS_END
 }
