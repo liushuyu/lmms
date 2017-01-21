@@ -52,31 +52,62 @@
 			const AutomationPattern::timeMap tp = a_tco->getTimeMap(); \
 			AutomationPattern::timeMap::const_iterator i; \
 			for( i=tp.constBegin(); i!=tp.constEnd(); ++i ) \
-			{
+			{\
 
 #define SEARCH_AUTOTRACKS_END \
 			}\
 		}\
 	}
 
-#define INSERT_CC_EVENT( type, zoom, t, val ) \
+#define PROGRESSION_CALC_START \
+	if( i != tp.constBegin() && \
+		a_tco->progressionType() != AutomationPattern::DiscreteProgression &&\
+		i.value() != (i-1).value() )\
+	{\
+		for( int ii = 1; ii < i.key() - (i-1).key(); ii++ ) \
+		{\
+
+#define PROGRESSION_CALC_END \
+		}\
+	}\
+
+
+#define INSERT_CC_EVENT( type, zoom, t, offset, val ) \
 	event = new MidiEvent( MidiControlChange );\
 	event->setChannel( currentChannel );\
 	event->setControllerNumber( type );\
 	event->setControllerValue( val * zoom );\
-	EventList.insert( t, event );
+	EventList.insert( t+offset, event );
 
-#define INSERT_PITCH_EVENT( t, val ) \
+#define INSERT_PITCH_EVENT( t, offset, val ) \
 	event = new MidiEvent( MidiPitchBend );\
 	event->setChannel( currentChannel );\
 	event->setPitchBend( val / pitchBendMultiply * ( MidiMaxPitchBend / 2 ) / 100 + ( MidiMaxPitchBend / 2 + 1 ) );\
-	EventList.insert( t, event );
+	EventList.insert( t+offset, event );
 
-#define INSERT_PROG_EVENT( t, val ) \
+#define INSERT_PROG_EVENT( t, offset, val ) \
 	event = new MidiEvent( MidiProgramChange ); \
 	event->setChannel( currentChannel );\
 	event->setParam( 0, val ); \
-	EventList.insert( t, event );
+	EventList.insert( t+offset, event );
+
+#define INSERT_TEMPO_EVENT( t, val ) \
+	MidiEvent * event = new MidiEvent( MidiMetaEvent ); \
+	event->setMetaEvent( MidiSetTempo ); \
+	event->setParam( 0, val ); \
+	EventList.insert( t, event ); \
+
+#define FIND_PITCH_MULTYPLY( t ) \
+	QMap< int, int >::const_iterator j;\
+	for( j=PitchBendMultiply.constBegin(); j!=PitchBendMultiply.constEnd(); ++j )\
+	{\
+		if( j.key() <= t )\
+			pitchBendMultiply = j.value();\
+		else\
+			break;\
+	}
+
+
 
 midiWriter::midiWriter( const TrackContainer::TrackList &tracks ):
 	m_tl( tracks ), m_seq( new drumstick::QSmf( this ) ),
@@ -113,7 +144,7 @@ midiWriter::midiWriter( const TrackContainer::TrackList &tracks ):
 		}
 		trackIndex++;
 	}
-	printf( "\tInstrument Tracks: %d\n", InstrumentTracks.count() );
+
 	// Track 0 is to write global events.
 	m_seq->setTracks( InstrumentTracks.size()+1 );
 	// 1 quarter note = 960 midi ticks.
@@ -247,13 +278,21 @@ void midiWriter::insertTempoEvent()
 {
 	AutomationPattern::timeMap time_map = tempoPat->getTimeMap();
 	AutomationPattern::timeMap::const_iterator i;
+	AutomationPattern::timeMap::const_iterator last = time_map.constBegin() ;
 
 	for( i = time_map.constBegin(); i != time_map.constEnd(); ++i )
 	{
-		MidiEvent * event = new MidiEvent( MidiMetaEvent );
-		event->setMetaEvent( MidiSetTempo );
-		event->setParam( 0, ( uint16_t ) i.value() );
-		EventList.insert( i.key(), event );
+		if( i != time_map.constBegin() &&
+			tempoPat->progressionType() != AutomationPattern::DiscreteProgression &&
+			i.value() != last.value() )
+		{
+			for(int ii = 1; ii < i.key() - (i-1).key(); ii++ )
+			{
+				INSERT_TEMPO_EVENT( (i-1).key()+ii, tempoPat->valueAt( MidiTime( (i-1).key()+ii ) ) );
+			}
+		}
+		INSERT_TEMPO_EVENT( i.key(), i.value() );
+		last = i;
 	}
 }
 
@@ -302,26 +341,39 @@ void midiWriter::insertCCEvent( InstrumentTrack *track )
 {
 	MidiEvent * event;
 
-	INSERT_CC_EVENT( MidiControllerPan, 127 / 100 + 127, 0, track->panningModel()->value() );
+	INSERT_CC_EVENT( MidiControllerPan, 127 / 100 + 127, 0, 0, track->panningModel()->value() );
 	SEARCH_AUTOTRACKS_START( track->panningModel() );
-		INSERT_CC_EVENT( MidiControllerPan, 127 / 100 + 127, i.key()+offset, i.value() );
+		PROGRESSION_CALC_START;
+			INSERT_CC_EVENT( MidiControllerPan, 127 / 100 + 127, (i-1).key(), offset, a_tco->valueAt( MidiTime( (i-1).key()+ii+offset ) ) );
+		PROGRESSION_CALC_END;
+		INSERT_CC_EVENT( MidiControllerPan, 127 / 100 + 127, i.key(), offset, i.value() );
 	SEARCH_AUTOTRACKS_END;
 
-	INSERT_CC_EVENT( MidiControllerMainVolume, 127 / 200, 0, track->volumeModel()->value() );
+	INSERT_CC_EVENT( MidiControllerMainVolume, 127 / 200, 0, 0, track->volumeModel()->value() );
 	SEARCH_AUTOTRACKS_START( track->volumeModel() );
-		INSERT_CC_EVENT( MidiControllerMainVolume, 127 / 200, i.key()+offset, i.value() );
+		PROGRESSION_CALC_START;
+			INSERT_CC_EVENT( MidiControllerMainVolume, 127 / 200, (i-1).key(), offset, a_tco->valueAt( MidiTime( (i-1).key()+ii+offset ) ) );
+		PROGRESSION_CALC_END;
+		INSERT_CC_EVENT( MidiControllerMainVolume, 127 / 200, i.key(), offset, i.value() );
 	SEARCH_AUTOTRACKS_END;
 
 	PitchBendMultiply.insert( 0, track->pitchRangeModel()->value() );
-	INSERT_CC_EVENT( MidiControllerDataEntry, 1, 0, track->pitchRangeModel()->value() );
+	INSERT_CC_EVENT( MidiControllerDataEntry, 1, 0, 0, track->pitchRangeModel()->value() );
 	SEARCH_AUTOTRACKS_START( track->pitchRangeModel() );
-		PitchBendMultiply.insert( i.key(), i.value() );
-		INSERT_CC_EVENT( MidiControllerDataEntry, 1, i.key()+offset, i.value() );
+		PROGRESSION_CALC_START;
+			PitchBendMultiply.insert( (i-1).key()+ii+offset, a_tco->valueAt( MidiTime( (i-1).key()+ii ) ) );
+			INSERT_CC_EVENT( MidiControllerDataEntry, 1, (i-1).key(), offset, a_tco->valueAt( MidiTime( (i-1).key()+ii+offset ) ) );
+		PROGRESSION_CALC_END;
+		PitchBendMultiply.insert( i.key()+offset, i.value() );
+		INSERT_CC_EVENT( MidiControllerDataEntry, 1, i.key(), offset, i.value() );
 	SEARCH_AUTOTRACKS_END;
 
-	INSERT_CC_EVENT( MidiControllerBankSelect, 1, 0, dynamic_cast< IntModel * >( track->instrument()->childModel( "bank" ) )->value() );
+	INSERT_CC_EVENT( MidiControllerBankSelect, 1, 0, 0, dynamic_cast< IntModel * >( track->instrument()->childModel( "bank" ) )->value() );
 	SEARCH_AUTOTRACKS_START( track->instrument()->childModel( "bank" ) );
-		INSERT_CC_EVENT( MidiControllerBankSelect, 1, i.key()+offset, i.value() );
+		PROGRESSION_CALC_START;
+			INSERT_CC_EVENT( MidiControllerBankSelect, 1, (i-1).key(), offset, a_tco->valueAt( MidiTime( (i-1).key()+ii+offset ) ) );
+		PROGRESSION_CALC_END;
+		INSERT_CC_EVENT( MidiControllerBankSelect, 1, i.key(), offset, i.value() );
 	SEARCH_AUTOTRACKS_END;
 }
 
@@ -356,11 +408,11 @@ void midiWriter::insertNoteEvent( InstrumentTrack *track )
 void midiWriter::insertProgramEvent( InstrumentTrack *track )
 {
 	MidiEvent * event;
-	INSERT_PROG_EVENT( 0, dynamic_cast<IntModel * >( track->instrument()->childModel( "patch" ) )->value() );
+	INSERT_PROG_EVENT( 0, 0, dynamic_cast<IntModel * >( track->instrument()->childModel( "patch" ) )->value() );
 
-	SEARCH_AUTOTRACKS_START( track->instrument()->childModel( "patch" ) )
-		INSERT_PROG_EVENT( i.key()+offset, i.value() )
-	SEARCH_AUTOTRACKS_END
+	SEARCH_AUTOTRACKS_START( track->instrument()->childModel( "patch" ) );
+		INSERT_PROG_EVENT( i.key(), offset, i.value() );
+	SEARCH_AUTOTRACKS_END;
 }
 
 void midiWriter::insertPitchEvent( InstrumentTrack *track )
@@ -368,18 +420,16 @@ void midiWriter::insertPitchEvent( InstrumentTrack *track )
 	MidiEvent * event;
 	int pitchBendMultiply;
 	pitchBendMultiply = track->pitchRangeModel()->value();
-	INSERT_PITCH_EVENT( 0, track->pitchModel()->value() );
+	INSERT_PITCH_EVENT( 0, 0, track->pitchModel()->value() );
 
 	SEARCH_AUTOTRACKS_START( track->pitchModel() )
-		QMap< int, int >::const_iterator j;
-		for( j=PitchBendMultiply.constBegin(); j!=PitchBendMultiply.constEnd(); ++j )
-		{
-			if( j.key() <= i.key() )
-				pitchBendMultiply = j.value();
-			else
-				break;
-		}
-		INSERT_PITCH_EVENT( i.key()+offset, i.value() );
+		PROGRESSION_CALC_START;
+			FIND_PITCH_MULTYPLY( (i-1).key() + ii );
+			INSERT_PITCH_EVENT( (i-1).key() + ii, offset, a_tco->valueAt( MidiTime( (i-1).key()+ii+offset ) ) );
+		PROGRESSION_CALC_END;
+
+		FIND_PITCH_MULTYPLY( i.key() );
+		INSERT_PITCH_EVENT( i.key(), offset, i.value() );
 	SEARCH_AUTOTRACKS_END
 }
 
@@ -400,7 +450,7 @@ void midiWriter::allocateChannel( InstrumentTrack *track )
 		int8_t prog = dynamic_cast< IntModel * >( tr_inst->childModel( "patch" ) )->value();
 
 		// Step 1: Find unused channel
-		for( currentChannel = 0; currentChannel < MidiChannelCount; currentChannel++ )
+		for( currentChannel = 0; currentChannel < 16; currentChannel++ )
 		{
 			if ( currentChannel == DrumChannel )
 				continue;
@@ -413,7 +463,7 @@ void midiWriter::allocateChannel( InstrumentTrack *track )
 		}
 
 		// Step 2: If no unused channel found, find channel has the same program.
-		for( currentChannel = 0; currentChannel < MidiChannelCount; currentChannel++ )
+		for( currentChannel = 0; currentChannel < 16; currentChannel++ )
 		{
 			if ( currentChannel == DrumChannel )
 				continue;

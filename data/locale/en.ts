@@ -4030,6 +4030,12 @@ You can remove and move FX channels in the context menu, which is accessed by ri
 <context>
     <name>InstrumentTrack</name>
     <message>
+        <location filename="plugins/vestige/vestige.cpp" line="247"/>
+        <location filename="src/tracks/InstrumentTrack.cpp" line="138"/>
+        <source>Default preset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="src/tracks/InstrumentTrack.cpp" line="90"/>
         <source>With this knob you can set the volume of the opened channel.</source>
         <translation type="unfinished"></translation>
@@ -4073,12 +4079,6 @@ You can remove and move FX channels in the context menu, which is accessed by ri
     <message>
         <location filename="src/tracks/InstrumentTrack.cpp" line="118"/>
         <source>Master Pitch</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/tracks/InstrumentTrack.cpp" line="138"/>
-        <location filename="plugins/vestige/vestige.cpp" line="247"/>
-        <source>Default preset</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -8502,6 +8502,19 @@ Continue?</source>
 <context>
     <name>TrackContainer</name>
     <message>
+        <location filename="plugins/SmfImport/commonReader.cpp" line="63"/>
+        <location filename="src/core/TrackContainer.cpp" line="95"/>
+        <source>Please wait...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="plugins/SmfImport/commonReader.cpp" line="117"/>
+        <location filename="plugins/SmfImport/commonReader.cpp" line="236"/>
+        <location filename="plugins/SmfImport/commonReader.cpp" line="387"/>
+        <source>Track %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="src/core/ImportFilter.cpp" line="83"/>
         <source>Couldn&apos;t import file</source>
         <translation type="unfinished"></translation>
@@ -8536,19 +8549,6 @@ Please make sure you have read-permission to the file and the directory containi
     <message>
         <location filename="src/core/TrackContainer.cpp" line="91"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/core/TrackContainer.cpp" line="95"/>
-        <location filename="plugins/SmfImport/commonReader.cpp" line="63"/>
-        <source>Please wait...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="plugins/SmfImport/commonReader.cpp" line="117"/>
-        <location filename="plugins/SmfImport/commonReader.cpp" line="236"/>
-        <location filename="plugins/SmfImport/commonReader.cpp" line="387"/>
-        <source>Track %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -11517,11 +11517,6 @@ Double clicking any of the plugins will bring up information on the ports.</sour
 <context>
     <name>pluginBrowser</name>
     <message>
-        <location filename="src/core/Plugin.cpp" line="47"/>
-        <source>no description</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="plugins/Amplifier/Amplifier.cpp" line="38"/>
         <source>A native amplifier plugin</source>
         <translation type="unfinished"></translation>
@@ -11735,6 +11730,11 @@ This chip was used in the Commodore 64 computer.</source>
     <message>
         <location filename="plugins/zynaddsubfx/ZynAddSubFx.cpp" line="59"/>
         <source>Embedded ZynAddSubFX</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/core/Plugin.cpp" line="47"/>
+        <source>no description</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
