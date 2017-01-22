@@ -316,7 +316,7 @@ void midiWriter::insertTimeSigEvent()
 	sort(TimeList.begin(), TimeList.end());
 
 	// Step 3, insert event.
-	uint16_t num, den;
+	uint16_t num=4, den=2;
 
 	for( int i : TimeList )
 	{
