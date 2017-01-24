@@ -1,7 +1,7 @@
 /*
- * MidiExport.h - support for Exporting MIDI-files
+ * smfMidiChannel.h - support for importing MIDI files
  *
- * Author: Mohamed Abdel Maksoud <mohamed at amaksoud.com>
+ * Copyright (c) 2005-2014 Tobias Doerffel <tobydox/at/users.sourceforge.net>
  *
  * This file is part of LMMS - http://lmms.io
  *
@@ -22,35 +22,38 @@
  *
  */
 
-#ifndef _MIDI_EXPORT_H
-#define _MIDI_EXPORT_H
+#ifndef SMF_MIDI_CHANNEL_H
+#define SMF_MIDI_CHANNEL_H
 
-#include <QString>
+#include <QApplication>
 
-#include "ExportFilter.h"
+#include "InstrumentTrack.h"
+#include "Pattern.h"
+#include "Instrument.h"
+#include "MidiTime.h"
 
 
-class MidiExport: public ExportFilter
+
+
+class SmfMidiChannel
 {
-// 	Q_OBJECT
+
 public:
-	MidiExport( );
-	~MidiExport();
-
-	virtual PluginView * instantiateView( QWidget * )
-	{
-		return( NULL );
-	}
-
-	virtual bool tryExport( const TrackContainer::TrackList &tracks, int tempo, const QString &filename );
+	SmfMidiChannel();
 	
-private:
+	InstrumentTrack * it;
+	Pattern* p;
+	Instrument * it_inst;
+	bool isSF2; 
+	bool hasNotes;
+	MidiTime lastEnd;
+	QString trackName;
 	
+	SmfMidiChannel * create( TrackContainer* tc, QString tn );
 
-	void error( void );
+	void addNote( Note & n );
+    void setName(QString tn );
 
-
-} ;
-
+};
 
 #endif
