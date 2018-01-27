@@ -12,13 +12,8 @@ export PATH=$MINGW/bin:$PATH
 export CFLAGS="-march=pentium3 -mtune=generic -mpreferred-stack-boundary=5 -mfpmath=sse"
 export CXXFLAGS="$CFLAGS"
 
-if [ "$1" = "-qt5" ]; then
-	QT5=True
-fi
-
-if [ $QT5 ]; then
-	CMAKE_OPTS="-DWANT_QT5=$QT5 -DCMAKE_PREFIX_PATH=$MINGW $CMAKE_OPTS"
-fi
-
+CMAKE_OPTS="-DCMAKE_PREFIX_PATH=$MINGW $CMAKE_OPTS"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cmake $DIR/.. -DCMAKE_TOOLCHAIN_FILE=$DIR/../cmake/modules/Win32Toolchain.cmake -DCMAKE_MODULE_PATH=$DIR/../cmake/modules/ $CMAKE_OPTS
+
+# shellcheck disable=SC2086
+cmake "$DIR/.." -DCMAKE_TOOLCHAIN_FILE="$DIR/../cmake/modules/Win32Toolchain.cmake" -DCMAKE_MODULE_PATH="$DIR/../cmake/modules/" $CMAKE_OPTS

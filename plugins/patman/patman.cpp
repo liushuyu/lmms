@@ -29,6 +29,7 @@
 #include <QPainter>
 #include <QDomElement>
 
+#include "ConfigManager.h"
 #include "endian_handling.h"
 #include "Engine.h"
 #include "gui_templates.h"
@@ -41,7 +42,7 @@
 #include "FileDialog.h"
 #include "ConfigManager.h"
 
-#include "embed.cpp"
+#include "embed.h"
 
 
 
@@ -65,7 +66,7 @@ Plugin::Descriptor PLUGIN_EXPORT patman_plugin_descriptor =
 
 
 // necessary for getting instance out of shared lib
-Plugin * PLUGIN_EXPORT lmms_plugin_main( Model *, void * _data )
+PLUGIN_EXPORT Plugin * lmms_plugin_main( Model *, void * _data )
 {
 	return new patmanInstrument( static_cast<InstrumentTrack *>( _data ) );
 }

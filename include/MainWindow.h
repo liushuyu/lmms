@@ -29,6 +29,7 @@
 #include <QtCore/QTimer>
 #include <QtCore/QList>
 #include <QMainWindow>
+#include <QThread>
 
 #include "ConfigManager.h"
 #include "SubWindow.h"
@@ -105,8 +106,6 @@ public:
 		return m_autoSaveTimer.interval();
 	}
 
-	void runAutoSave();
-
 	enum SessionState
 	{
 		Normal,
@@ -142,7 +141,7 @@ public:
 		return m_keyMods.m_alt;
 	}
 
-	static void saveWidgetState( QWidget * _w, QDomElement & _de, QSize const & sizeIfInvisible = QSize(0, 0) );
+	static void saveWidgetState( QWidget * _w, QDomElement & _de );
 	static void restoreWidgetState( QWidget * _w, const QDomElement & _de );
 
 public slots:
@@ -176,6 +175,9 @@ public slots:
 
 	void autoSave();
 
+private slots:
+	void onExportProjectMidi();
+
 protected:
 	virtual void closeEvent( QCloseEvent * _ce );
 	virtual void focusOutEvent( QFocusEvent * _fe );
@@ -193,6 +195,11 @@ private:
 
 	void toggleWindow( QWidget *window, bool forceShow = false );
 	void refocus();
+
+	void exportProject(bool multiExport = false);
+	void handleSaveResult(QString const & filename, bool songSavedSuccessfully);
+	bool guiSaveProject();
+	bool guiSaveProjectAs( const QString & filename );
 
 	QMdiArea * m_workspace;
 
@@ -242,7 +249,12 @@ private slots:
 	void updateViewMenu( void );
 	void updateConfig( QAction * _who );
 	void onToggleMetronome();
-
+	void onExportProject();
+	void onExportProjectTracks();
+	void onImportProject();
+	void onSongStopped();
+	void onSongModified();
+	void onProjectFileNameChanged();
 
 signals:
 	void periodicUpdate();

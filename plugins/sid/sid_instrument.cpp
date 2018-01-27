@@ -41,7 +41,7 @@
 #include "PixmapButton.h"
 #include "ToolTip.h"
 
-#include "embed.cpp"
+#include "embed.h"
 
 #define C64_PAL_CYCLES_PER_SEC  985248
 
@@ -822,7 +822,7 @@ extern "C"
 {
 
 // necessary for getting instance out of shared lib
-Plugin * PLUGIN_EXPORT lmms_plugin_main( Model *, void * _data )
+PLUGIN_EXPORT Plugin * lmms_plugin_main( Model *, void * _data )
 {
 	return( new sidInstrument(
 				static_cast<InstrumentTrack *>( _data ) ) );

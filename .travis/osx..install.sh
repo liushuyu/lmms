@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
 
-PACKAGES="cmake pkgconfig fftw libogg libvorbis libsndfile libsamplerate jack sdl libgig libsoundio stk portaudio node fltk"
+set -e
 
-if [ $QT5 ]; then
-	PACKAGES="$PACKAGES homebrew/versions/qt55"
-else
-	PACKAGES="$PACKAGES cartr/qt4/qt"
+PACKAGES="cmake pkg-config libogg libvorbis lame libsndfile libsamplerate jack sdl libsoundio stk portaudio node fltk qt5"
+
+if "${TRAVIS}"; then
+   PACKAGES="$PACKAGES ccache"
 fi
 
-brew install $PACKAGES ccache
+# removing already installed packages from the list
+for p in $(brew list); do
+	PACKAGES=${PACKAGES//$p/}
+done;
+
+# shellcheck disable=SC2086
+brew install $PACKAGES
+
+# fftw tries to install gcc which conflicts with travis
+brew install fftw --ignore-dependencies
 
 # Recompile fluid-synth without CoreAudio per issues #649
-# Changes to fluid-synth.rb must be pushed to URL prior to use
-url=$(git remote get-url origin)
-branch=$(git symbolic-ref --short HEAD)
-brew install --build-from-source $url/raw/$branch/cmake/apple/fluid-synth.rb
+# Ruby formula must be a URL
+
+brew install --build-from-source "https://gist.githubusercontent.com/tresf/c9260c43270abd4ce66ff40359588435/raw/fluid-synth.rb"
+
+# Build libgig 4.1.0 from source to avoid 3.3.0 "ISO C++11 does not allow access declarations"
+brew install --build-from-source "https://raw.githubusercontent.com/tresf/homebrew-core/gig/Formula/libgig.rb"
 
 sudo npm install -g appdmg

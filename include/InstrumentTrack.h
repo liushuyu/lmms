@@ -27,6 +27,7 @@
 #define INSTRUMENT_TRACK_H
 
 #include "AudioPort.h"
+#include "GroupBox.h"
 #include "InstrumentFunctions.h"
 #include "InstrumentSoundShaping.h"
 #include "MidiEventProcessor.h"
@@ -236,6 +237,7 @@ private:
 	MidiPort m_midiPort;
 
 	NotePlayHandle* m_notes[NumKeys];
+	NotePlayHandleList m_sustainedNotes;
 
 	int m_runningMidiNotes[NumKeys];
 	QMutex m_midiNotesMutex;

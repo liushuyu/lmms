@@ -38,7 +38,7 @@
 #include "TabBar.h"
 #include "TabButton.h"
 
-#include "embed.cpp"
+#include "embed.h"
 
 
 
@@ -54,14 +54,14 @@ Plugin::Descriptor PLUGIN_EXPORT ladspabrowser_plugin_descriptor =
 	"Danny McRae <khjklujn/at/users.sourceforge.net>",
 	0x0100,
 	Plugin::Tool,
-	new PluginPixmapLoader( "logo" ),
+	new PluginPixmapLoader("logo"),
 	NULL,
 	NULL
 } ;
 
 
 // necessary for getting instance out of shared lib
-Plugin * PLUGIN_EXPORT lmms_plugin_main( Model * _parent, void * _data )
+PLUGIN_EXPORT Plugin * lmms_plugin_main( Model * _parent, void * _data )
 {
 	return new ladspaBrowser;
 }

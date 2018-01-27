@@ -57,7 +57,6 @@
 #include <signal.h>
 
 #include "MainApplication.h"
-#include "MemoryManager.h"
 #include "ConfigManager.h"
 #include "NotePlayHandle.h"
 #include "embed.h"
@@ -70,6 +69,33 @@
 #include "RenderManager.h"
 #include "Song.h"
 #include "SetupDialog.h"
+
+#ifdef LMMS_DEBUG_FPE
+#include <fenv.h> // For feenableexcept
+#include <execinfo.h> // For backtrace and backtrace_symbols_fd
+#include <unistd.h> // For STDERR_FILENO
+#include <csignal> // To register the signal handler
+#endif
+
+
+#ifdef LMMS_DEBUG_FPE
+void signalHandler( int signum ) {
+
+	// Get a back trace
+	void *array[10];
+	size_t size;
+
+	// get void*'s for all entries on the stack
+	size = backtrace(array, 10);
+
+	backtrace_symbols_fd(array, size, STDERR_FILENO);
+
+	// cleanup and close up stuff here
+	// terminate program
+
+	exit(signum);
+}
+#endif
 
 static inline QString baseName( const QString & file )
 {
@@ -103,7 +129,7 @@ void printVersion( char *executableName )
 		"License as published by the Free Software Foundation; either\n"
 		"version 2 of the License, or (at your option) any later version.\n\n"
 		"Try \"%s --help\" for more information.\n\n", LMMS_VERSION,
-		PLATFORM, MACHINE, QT_VERSION_STR, GCC_VERSION,
+		PLATFORM, MACHINE, QT_VERSION_STR, COMPILER_VERSION,
 		LMMS_PROJECT_COPYRIGHT, executableName );
 }
 
@@ -124,6 +150,7 @@ void printHelp()
 		"            [ -i <method> ]\n"
 		"            [ --import <in> [-e]]\n"
 		"            [ -l ]\n"
+		"            [ -m <mode>]\n"
 		"            [ -o <path> ]\n"
 		"            [ -p <out> ]\n"
 		"            [ -r <project file> ] [ options ]\n"
@@ -138,7 +165,7 @@ void printHelp()
 		"-c, --config <configfile>     Get the configuration from <configfile>\n"
 		"-d, --dump <in>               Dump XML of compressed file <in>\n"
 		"-f, --format <format>         Specify format of render-output where\n"
-		"       Format is either 'wav' or 'ogg'.\n"
+		"       Format is either 'wav', 'flac', 'ogg' or 'mp3'.\n"
 		"    --geometry <geometry>     Specify the size and position of the main window\n"
 		"       geometry is <xsizexysize+xoffset+yoffsety>.\n"
 		"-h, --help                    Show this usage information and exit.\n"
@@ -151,6 +178,12 @@ void printHelp()
 		"    --import <in> [-e]        Import MIDI file <in>.\n"
 		"       If -e is specified lmms exits after importing the file.\n"
 		"-l, --loop                    Render as a loop\n"
+		"-m, --mode                    Stereo mode used for MP3 export\n"
+		"       Possible values: s, j, m\n"
+		"         s: Stereo\n"
+		"         j: Joint Stereo\n"
+		"         m: Mono\n"
+		"       Default: j\n"
 		"-o, --output <path>           Render into <path>\n"
 		"       For --render, provide a file path\n"
 		"       For --rendertracks, provide a directory path\n"
@@ -195,8 +228,19 @@ void fileCheck( QString &file )
 
 int main( int argc, char * * argv )
 {
+#ifdef LMMS_DEBUG_FPE
+	// Enable exceptions for certain floating point results
+	feenableexcept( FE_INVALID   |
+			FE_DIVBYZERO |
+			FE_OVERFLOW  |
+			FE_UNDERFLOW);
+
+	// Install the trap handler
+	// register signal SIGFPE and signal handler
+	signal(SIGFPE, signalHandler);
+#endif
+
 	// initialize memory managers
-	MemoryManager::init();
 	NotePlayHandleManager::init();
 
 	// intialize RNG
@@ -252,7 +296,7 @@ int main( int argc, char * * argv )
 	{
 		printf( "LMMS cannot be run as root.\nUse \"--allowroot\" to override.\n\n" );
 		return EXIT_FAILURE;
-	}	
+	}
 #endif
 
 	QCoreApplication * app = coreOnly ?
@@ -260,7 +304,7 @@ int main( int argc, char * * argv )
 					new MainApplication( argc, argv );
 
 	Mixer::qualitySettings qs( Mixer::qualitySettings::Mode_HighQuality );
-	OutputSettings os( 44100, OutputSettings::BitRateSettings(160, false), OutputSettings::Depth_16Bit );
+	OutputSettings os( 44100, OutputSettings::BitRateSettings(160, false), OutputSettings::Depth_16Bit, OutputSettings::StereoMode_JointStereo );
 	ProjectRenderer::ExportFileFormats eff = ProjectRenderer::WaveFile;
 
 	// second of two command-line parsing stages
@@ -314,7 +358,7 @@ int main( int argc, char * * argv )
 				printf( "\nOption \"--allowroot\" will be ignored on this platform.\n\n" );
 			}
 #endif
-			
+
 		}
 		else if( arg == "--dump" || arg == "-d" )
 		{
@@ -392,6 +436,16 @@ int main( int argc, char * * argv )
 				eff = ProjectRenderer::OggFile;
 			}
 #endif
+#ifdef LMMS_HAVE_MP3LAME
+			else if( ext == "mp3" )
+			{
+				eff = ProjectRenderer::MP3File;
+			}
+#endif
+			else if (ext == "flac")
+			{
+				eff = ProjectRenderer::FlacFile;
+			}
 			else
 			{
 				printf( "\nInvalid output format %s.\n\n"
@@ -446,6 +500,38 @@ int main( int argc, char * * argv )
 			else
 			{
 				printf( "\nInvalid bitrate %s.\n\n"
+	"Try \"%s --help\" for more information.\n\n", argv[i], argv[0] );
+				return EXIT_FAILURE;
+			}
+		}
+		else if( arg == "--mode" || arg == "-m" )
+		{
+			++i;
+
+			if( i == argc )
+			{
+				printf( "\nNo stereo mode specified.\n\n"
+	"Try \"%s --help\" for more information.\n\n", argv[0] );
+				return EXIT_FAILURE;
+			}
+
+			QString const mode( argv[i] );
+
+			if( mode == "s" )
+			{
+				os.setStereoMode(OutputSettings::StereoMode_Stereo);
+			}
+			else if( mode == "j" )
+			{
+				os.setStereoMode(OutputSettings::StereoMode_JointStereo);
+			}
+			else if( mode == "m" )
+			{
+				os.setStereoMode(OutputSettings::StereoMode_Mono);
+			}
+			else
+			{
+				printf( "\nInvalid stereo mode %s.\n\n"
 	"Try \"%s --help\" for more information.\n\n", argv[i], argv[0] );
 				return EXIT_FAILURE;
 			}
@@ -761,16 +847,16 @@ int main( int argc, char * * argv )
 			QPushButton * recover;
 			QPushButton * discard;
 			QPushButton * exit;
-			
+
 			#if QT_VERSION >= 0x050000
-				// setting all buttons to the same roles allows us 
+				// setting all buttons to the same roles allows us
 				// to have a custom layout
 				discard = mb.addButton( MainWindow::tr( "Discard" ),
 									QMessageBox::AcceptRole );
 				recover = mb.addButton( MainWindow::tr( "Recover" ),
 									QMessageBox::AcceptRole );
 
-			# else 
+			# else
 				// in qt4 the button order is reversed
 				recover = mb.addButton( MainWindow::tr( "Recover" ),
 									QMessageBox::AcceptRole );
@@ -778,11 +864,11 @@ int main( int argc, char * * argv )
 									QMessageBox::AcceptRole );
 
 			#endif
-			
+
 			// have a hidden exit button
 			exit = mb.addButton( "", QMessageBox::RejectRole);
 			exit->setVisible(false);
-			
+
 			// set icons
 			recover->setIcon( embed::getIconPixmap( "recover" ) );
 			discard->setIcon( embed::getIconPixmap( "discard" ) );
@@ -846,13 +932,15 @@ int main( int argc, char * * argv )
 		else if( ConfigManager::inst()->
 				value( "app", "openlastproject" ).toInt() &&
 			!ConfigManager::inst()->
-				recentlyOpenedProjects().isEmpty() )
+				recentlyOpenedProjects().isEmpty() &&
+				!recoveryFilePresent )
 		{
 			QString f = ConfigManager::inst()->
 					recentlyOpenedProjects().first();
 			QFileInfo recentFile( f );
 
-			if ( recentFile.exists() )
+			if ( recentFile.exists() &&
+				recentFile.suffix().toLower() != "mpt" )
 			{
 				Engine::getSong()->loadProject( f );
 			}
@@ -872,7 +960,6 @@ int main( int argc, char * * argv )
 		if( autoSaveEnabled )
 		{
 			gui->mainWindow()->autoSaveTimerReset();
-			gui->mainWindow()->autoSave();
 		}
 	}
 
@@ -883,9 +970,6 @@ int main( int argc, char * * argv )
 	{
 		Engine::destroy();
 	}
-
-	// cleanup memory managers
-	MemoryManager::cleanup();
 
 	// ProjectRenderer::updateConsoleProgress() doesn't return line after render
 	if( coreOnly )

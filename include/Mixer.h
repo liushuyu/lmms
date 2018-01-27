@@ -155,6 +155,7 @@ public:
 
 	void initDevices();
 	void clear();
+	void clearNewPlayHandles();
 
 
 	// audio-device-stuff
@@ -421,6 +422,7 @@ private:
 
 	friend class LmmsCore;
 	friend class MixerWorkerThread;
+	friend class ProjectRenderer;
 
 } ;
 

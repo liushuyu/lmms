@@ -1,5 +1,6 @@
 INCLUDE(BuildPlugin)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # definitions for ZynAddSubFX
 IF(LMMS_BUILD_LINUX OR LMMS_BUILD_APPLE OR LMMS_BUILD_OPENBSD)
@@ -24,9 +25,8 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wno-write-strings -Wno-deprecated-d
 IF(LMMS_BUILD_WIN32)
 	# link system-libraries
 	ADD_DEFINITIONS(-DPTW32_STATIC_LIB)
-	# fix X11 headers errors caused by bug with mingw + c++11
-	REMOVE_DEFINITIONS(-std=c++0x)
-	ADD_DEFINITIONS(-std=gnu++0x) 
+	# fix X11 headers errors caused by bug with mingw + c++11 (enable -std=gnu++0x)
+	SET(CMAKE_CXX_EXTENSIONS ON)
 ENDIF(LMMS_BUILD_WIN32)
 
 SET(FLTK_SKIP_OPENGL TRUE)
@@ -127,9 +127,7 @@ IF(LMMS_BUILD_MSYS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 	TARGET_LINK_LIBRARIES(ZynAddSubFxCore QtCore4 QtGui4 QtXml4)
 ENDIF()
 
-IF(QT5)
 TARGET_LINK_LIBRARIES(ZynAddSubFxCore Qt5::Widgets Qt5::Xml)
-ENDIF()
 
 IF(LMMS_BUILD_WIN32)
 	TARGET_LINK_LIBRARIES(ZynAddSubFxCore -lws2_32)
@@ -146,7 +144,7 @@ IF(LMMS_BUILD_LINUX)
 ELSE()
 	SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PLUGIN_DIR}")
 ENDIF()
-BUILD_PLUGIN(zynaddsubfx ZynAddSubFx.cpp ZynAddSubFx.h MOCFILES ZynAddSubFx.h EMBEDDED_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.png")
+BUILD_PLUGIN(zynaddsubfx ZynAddSubFx.cpp ZynAddSubFx.h MOCFILES ZynAddSubFx.h EMBEDDED_RESOURCES artwork.png logo.png)
 TARGET_LINK_LIBRARIES(zynaddsubfx -lZynAddSubFxCore)
 ADD_DEPENDENCIES(zynaddsubfx ZynAddSubFxCore)
 
@@ -179,9 +177,7 @@ TARGET_LINK_LIBRARIES(RemoteZynAddSubFx zynaddsubfx_gui -lZynAddSubFxCore ${FLTK
 ADD_DEPENDENCIES(RemoteZynAddSubFx ZynAddSubFxCore)
 
 # Support qt_version_tag in Qt 5.6
-IF(QT5)
-	TARGET_LINK_LIBRARIES(RemoteZynAddSubFx Qt5::Core)
-ENDIF(QT5)
+TARGET_LINK_LIBRARIES(RemoteZynAddSubFx Qt5::Core)
 
 # link Qt libraries when on win32
 IF(LMMS_BUILD_WIN32)

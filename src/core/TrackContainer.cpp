@@ -33,12 +33,14 @@
 #include "AutomationTrack.h"
 #include "BBTrack.h"
 #include "BBTrackContainer.h"
+#include "embed.h"
 #include "TrackContainer.h"
 #include "InstrumentTrack.h"
 #include "Song.h"
 
 #include "GuiApplication.h"
 #include "MainWindow.h"
+#include "TextFloat.h"
 
 TrackContainer::TrackContainer() :
 	Model( NULL ),
@@ -86,24 +88,17 @@ void TrackContainer::loadSettings( const QDomElement & _this )
 
 	static QProgressDialog * pd = NULL;
 	bool was_null = ( pd == NULL );
-	int start_val = 0;
 	if( !journalRestore && gui != nullptr )
 	{
 		if( pd == NULL )
 		{
 			pd = new QProgressDialog( tr( "Loading project..." ),
 						tr( "Cancel" ), 0,
-						_this.childNodes().count(),
+						Engine::getSong()->getLoadingTrackCount(),
 						gui->mainWindow() );
 			pd->setWindowModality( Qt::ApplicationModal );
 			pd->setWindowTitle( tr( "Please wait..." ) );
 			pd->show();
-		}
-		else
-		{
-			start_val = pd->value();
-			pd->setMaximum( pd->maximum() +
-						_this.childNodes().count() );
 		}
 	}
 
@@ -117,6 +112,14 @@ void TrackContainer::loadSettings( const QDomElement & _this )
 						QEventLoop::AllEvents, 100 );
 			if( pd->wasCanceled() )
 			{
+				if ( gui )
+				{
+					TextFloat::displayMessage( tr( "Loading cancelled" ),
+					tr( "Project loading was cancelled." ),
+					embed::getIconPixmap( "project_file", 24, 24 ),
+					2000 );
+				}
+				Engine::getSong()->loadingCancelled();
 				break;
 			}
 		}
@@ -124,6 +127,14 @@ void TrackContainer::loadSettings( const QDomElement & _this )
 		if( node.isElement() &&
 			!node.toElement().attribute( "metadata" ).toInt() )
 		{
+			QString trackName = node.toElement().hasAttribute( "name" ) ?
+						node.toElement().attribute( "name" ) :
+						node.firstChild().toElement().attribute( "name" );
+			if( pd != NULL )
+			{
+				pd->setLabelText( tr("Loading Track %1 (%2/Total %3)").arg( trackName ).
+						  arg( pd->value() + 1 ).arg( Engine::getSong()->getLoadingTrackCount() ) );
+			}
 			Track::create( node.toElement(), this );
 		}
 		node = node.nextSibling();
@@ -131,7 +142,6 @@ void TrackContainer::loadSettings( const QDomElement & _this )
 
 	if( pd != NULL )
 	{
-		pd->setValue( start_val + _this.childNodes().count() );
 		if( was_null )
 		{
 			delete pd;
@@ -286,6 +296,9 @@ AutomatedValueMap TrackContainer::automatedValuesFromTracks(const TrackList &tra
 				continue;
 			}
 			MidiTime relTime = time - p->startPosition();
+			if (! p->getAutoResize()) {
+				relTime = qMin(relTime, p->length());
+			}
 			float value = p->valueAt(relTime);
 
 			for (AutomatableModel* model : p->objects())

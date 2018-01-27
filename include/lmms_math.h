@@ -26,7 +26,7 @@
 #ifndef LMMS_MATH_H
 #define LMMS_MATH_H
 
-#include <stdint.h>
+#include <cstdint>
 #include "lmms_constants.h"
 #include "lmmsconfig.h"
 #include <QtCore/QtGlobal>
@@ -34,25 +34,8 @@
 #include <cmath>
 using namespace std;
 
-#if defined (LMMS_BUILD_WIN32) || defined (LMMS_BUILD_APPLE) || defined(LMMS_BUILD_HAIKU)  || defined (__FreeBSD__) || defined(__OpenBSD__)
-#ifndef isnanf
-#define isnanf(x)	isnan(x)
-#endif
-#ifndef isinff
-#define isinff(x)	isinf(x)
-#endif
-#ifndef _isnanf
-#define _isnanf(x) isnan(x)
-#endif
-#ifndef _isinff
-#define _isinff(x) isinf(x)
-#endif
 #ifndef exp10
-#define exp10(x) pow( 10.0, x )
-#endif
-#ifndef exp10f
-#define exp10f(x) powf( 10.0f, x )
-#endif
+#define exp10(x) std::pow( 10.0, x )
 #endif
 
 #ifdef __INTEL_COMPILER
@@ -229,11 +212,12 @@ static inline float logToLinearScale( float min, float max, float value )
 static inline float linearToLogScale( float min, float max, float value )
 {
 	static const float EXP = 1.0f / F_E;
-	const float val = ( value - min ) / ( max - min );
+	const float valueLimited = qBound( min, value, max);
+	const float val = ( valueLimited - min ) / ( max - min );
 	if( min < 0 )
 	{
 		const float mmax = qMax( qAbs( min ), qAbs( max ) );
-		float result = signedPowf( value / mmax, EXP ) * mmax;
+		float result = signedPowf( valueLimited / mmax, EXP ) * mmax;
 		return isnan( result ) ? 0 : result;
 	}
 	float result = powf( val, EXP ) * ( max - min ) + min;
@@ -259,9 +243,9 @@ static inline float safeAmpToDbfs( float amp )
 //! @return Linear amplitude
 static inline float safeDbfsToAmp( float dbfs )
 {
-	return isinff( dbfs )
+	return isinf( dbfs )
 		? 0.0f
-		: exp10f( dbfs * 0.05f );
+		: exp10( dbfs * 0.05f );
 }
 
 
@@ -279,7 +263,7 @@ static inline float ampToDbfs( float amp )
 //! @return Linear amplitude
 static inline float dbfsToAmp( float dbfs )
 {
-	return exp10f( dbfs * 0.05f );
+	return exp10( dbfs * 0.05f );
 }
 
 
