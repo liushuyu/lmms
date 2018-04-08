@@ -136,7 +136,8 @@ SetupDialog::SetupDialog( ConfigTabs _tab_to_open ) :
 						   "displaywaveform").toInt() ),
 	m_disableAutoQuit(ConfigManager::inst()->value( "ui",
 						   "disableautoquit").toInt() ),
-	m_vstEmbedMethod( ConfigManager::inst()->vstEmbedMethod() )
+	m_vstEmbedMethod( ConfigManager::inst()->vstEmbedMethod() ),
+	m_configChanged( false )
 {
 	setWindowIcon( embed::getIconPixmap( "setup_general" ) );
 	setWindowTitle( tr( "Setup LMMS" ) );
@@ -992,6 +993,8 @@ SetupDialog::SetupDialog( ConfigTabs _tab_to_open ) :
 							buttons );
 	connect( cancel_btn, SIGNAL( clicked() ), this, SLOT( reject() ) );
 
+	connect( ConfigManager::inst(), SIGNAL( valueChanged( QString, QString, QString ) ), this, SLOT( setValueChanged() ) );
+
 	btn_layout->addStretch();
 	btn_layout->addSpacing( 10 );
 	btn_layout->addWidget( ok_btn );
@@ -1023,20 +1026,6 @@ SetupDialog::~SetupDialog()
 
 void SetupDialog::accept()
 {
-	if( m_warnAfterSetup )
-	{
-		QMessageBox::information( NULL, tr( "Restart LMMS" ),
-					tr( "Please note that most changes "
-						"won't take effect until "
-						"you restart LMMS!" ),
-					QMessageBox::Ok );
-	}
-
-	// Hide dialog before setting values. This prevents an obscure bug
-	// where non-embedded VST windows would steal focus and prevent LMMS
-	// from taking mouse input, rendering the application unusable.
-	QDialog::accept();
-
 	ConfigManager::inst()->setValue( "mixer", "framesperaudiobuffer",
 					QString::number( m_bufferSize ) );
 	ConfigManager::inst()->setValue( "mixer", "audiodev",
@@ -1116,6 +1105,26 @@ void SetupDialog::accept()
 	}
 
 	ConfigManager::inst()->saveConfigFile();
+
+	if( m_warnAfterSetup && m_configChanged)
+	{
+		QMessageBox::information( NULL, tr( "Restart LMMS" ),
+					tr( "Please note that most changes "
+						"won't take effect until "
+						"you restart LMMS!" ),
+					QMessageBox::Ok );
+		if ( QMessageBox::question( NULL, tr( "Restart LMMS" ),
+					tr( "Do you want to restart LMMS now? <br>"
+						"<b>All your unsaved changes MAYBE LOST!</b>"),
+									QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes ) {
+			restartLMMS();
+		}
+	}
+
+	// Hide dialog before setting values. This prevents an obscure bug
+	// where non-embedded VST windows would steal focus and prevent LMMS
+	// from taking mouse input, rendering the application unusable.
+	QDialog::accept();
 }
 
 
@@ -1308,7 +1317,17 @@ void SetupDialog::setLanguage( int lang )
 	m_lang = m_languages[lang];
 }
 
+void SetupDialog::setValueChanged()
+{
+	m_configChanged = true;
+}
 
+void SetupDialog::restartLMMS()
+{
+	Engine::getSong()->saveProjectFile(ConfigManager::inst()->recoveryFile());  // attempt a save
+	qApp->quit();
+	QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+}
 
 
 

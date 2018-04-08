@@ -28,12 +28,14 @@
 
 #include <QDialog>
 #include <QtCore/QMap>
+#include <QProcess> // For restart LMMS
 
 #include "LedCheckbox.h"
 #include "lmmsconfig.h"
 #include "AudioDevice.h"
 #include "MidiClient.h"
 #include "MidiSetupWidget.h"
+#include "Song.h"
 
 #include "AudioDeviceSetupWidget.h"
 
@@ -127,6 +129,7 @@ private slots:
 	void toggleDisableAutoquit( bool en );
 
 	void setLanguage( int lang );
+	void setValueChanged();
 
 
 private:
@@ -191,6 +194,7 @@ private:
 	bool m_printNoteLabels;
 	bool m_displayWaveform;
 	bool m_disableAutoQuit;
+	bool m_configChanged;
 
 	typedef QMap<QString, AudioDeviceSetupWidget *> AswMap;
 	typedef QMap<QString, MidiSetupWidget *> MswMap;
@@ -206,6 +210,8 @@ private:
 
 	QComboBox* m_vstEmbedComboBox;
 	QString m_vstEmbedMethod;
+
+	void restartLMMS();
 } ;
 
 
