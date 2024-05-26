@@ -1,4 +1,4 @@
-name: lmms-publish
+name: publish
 
 on:
   schedule:
@@ -31,8 +31,6 @@ jobs:
             if (context.payload.inputs && context.payload.inputs.nightly === 'true') return true;
             const checkPRChanges = require('./.github/workflows/ci-merge.js').checkPRChanges;
             return checkPRChanges(github, context);
-      - run: npm install execa@9
-        if: ${{ steps.check-changes.outputs.result == 'true' }}
       - uses: actions/checkout@v4
         name: Checkout
         if: ${{ steps.check-changes.outputs.result == 'true' }}
@@ -48,7 +46,7 @@ jobs:
           ALT_GITHUB_TOKEN: ${{ secrets.ALT_GITHUB_TOKEN }}
         with:
           script: |
-            const execa = require("execa");
+            const execa = exec.exec;
             const mergebot = require('./.github/workflows/ci-merge.js').mergebot;
             process.chdir('${{ github.workspace }}/lmms-merge');
             mergebot(github, context, execa);
